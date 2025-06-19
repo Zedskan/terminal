@@ -1,7 +1,7 @@
 {
-  "name": "terminal",
+  "name": "terminal-enhanced",
   "private": true,
-  "version": "3.3.4",
+  "version": "3.3.4-mod.1",
   "type": "module",
   "license": "MIT",
   "author": {
@@ -9,13 +9,14 @@
     "url": "https://fathi.me",
     "email": "yassine@fathi.me"
   },
-  "funding": {
-    "type": "Paypal",
-    "url": "https://paypal.me/yfthi"
+  "contributor": {
+  "name": "Zedskan",
+  "url": "https://zedskan.github.io/",
+  "email": "alterZdkn@proton.me"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/m4tt72/terminal"
+    "url": "https://github.com/Zedskan/terminal.git"
   },
   "scripts": {
     "dev": "vite",
