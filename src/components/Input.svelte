@@ -8,6 +8,8 @@
   let command = '';
   let historyIndex = -1;
 
+  let clickStartTime: number;
+
   let input: HTMLInputElement;
 
   onMount(() => {
@@ -28,6 +30,7 @@
     input.scrollIntoView({ behavior: 'smooth', block: 'end' });
   });
 
+
   const handleKeyDown = async (event: KeyboardEvent) => {
     if (event.key === 'Enter') {
       const [commandName, ...args] = command.split(' ');
@@ -42,7 +45,9 @@
         const output = await commandFunction(args);
 
         if (commandName !== 'clear') {
-          $history = [...$history, { command, outputs: [output] }];
+          // Handle both string and markdown object outputs
+          const outputArray = Array.isArray(output) ? output : [output];
+          $history = [...$history, { command, outputs: outputArray }];
         }
       } else {
         const output = `${commandName}: command not found`;
@@ -86,11 +91,16 @@
   };
 </script>
 
+
 <svelte:window
-  on:click={() => {
-    input.focus();
+  on:mousedown={() => clickStartTime = Date.now()}
+  on:mouseup={() => {
+    const clickDuration = Date.now() - clickStartTime;
+    if (clickDuration < 200) input.focus();
   }}
 />
+
+
 
 <div class="flex w-full">
   <p class="visible md:hidden">❯</p>

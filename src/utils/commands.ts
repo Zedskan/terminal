@@ -6,7 +6,12 @@ import { writeups, categories, getWriteupsByCategory, getWriteupById } from '../
 
 const hostname = window.location.hostname;
 
-export const commands: Record<string, (args: string[]) => Promise<string> | string> = {
+// Add this type definition at the top of your commands.ts file
+type CommandOutput = string | { type: 'markdown', content: string };
+type CommandFunction = (args: string[]) => Promise<CommandOutput> | CommandOutput;
+
+
+export const commands: Record<string, CommandFunction> = {
   help: () => 'Available commands: ' + Object.keys(commands).join(', '),
   hostname: () => hostname,
   whoami: () => 'guest',
@@ -91,86 +96,58 @@ export const commands: Record<string, (args: string[]) => Promise<string> | stri
       return output;
     }
   },
+// Command to read a specific writeup - UPDATED VERSION
+ // Updated read command
+  read: async (args: string[]): Promise<CommandOutput> => {
+    if (args.length === 0) {
+      return 'Usage: read <writeup-id>\nExample: read sqli-basics';
+    }
+    
+    const writeupId = args[0];
+    const writeup = getWriteupById(writeupId);
+    
+    if (!writeup) {
+      return `Error: Writeup '${writeupId}' not found.\nUse 'writeups' to see all available writeups.`;
+    }
+    
+    try {
+      // Try to load the markdown file content
+      const response = await fetch(writeup.filePath);
+      
+      if (!response.ok) {
+        throw new Error('Could not load file');
+      }
+      
+      const content = await response.text();
+      
+      // Create header information as markdown
+      const headerMarkdown = `# ${writeup.title}
 
-  // Command to read a specific writeup
-  // Command to read a specific writeup
-read: async (args: string[]) => {
-  if (args.length === 0) {
-    return 'Usage: read <writeup-id>\nExample: read sqli-basics';
-  }
-  
-  const writeupId = args[0];
-  const writeup = getWriteupById(writeupId);
-  
-  if (!writeup) {
-    return `Error: Writeup '${writeupId}' not found.\nUse 'writeups' to see all available writeups.`;
-  }
-  
-  try {
-    // Try to load the markdown file content
-    const response = await fetch(writeup.filePath);
-    
-    if (!response.ok) {
-      throw new Error('Could not load file');
+**Date:** ${writeup.date}  
+**Tags:** ${writeup.tags.join(', ')}  
+**Difficulty:** ${writeup.difficulty}  
+**Category:** ${writeup.category}  
+${writeup.platform ? `**Platform:** ${writeup.platform}  ` : ''}
+${writeup.event ? `**Event:** ${writeup.event}  ` : ''}
+
+---
+
+`;
+      
+      // Combine header with the actual content
+      const fullContent = headerMarkdown + content;
+      
+      // Return as markdown object instead of plain text
+      return {
+        type: 'markdown' as const,
+        content: fullContent
+      };
+      
+    } catch (error) {
+      // For errors, still return plain text
+      return `Error loading writeup: ${error}\n\nExample content for '${writeup.title}':\n\n${getExampleContent(writeup)}`;
     }
-    
-    const content = await response.text();
-    
-    // Header of the writeup
-    let output = `${writeup.title}\n`;
-    output += '='.repeat(writeup.title.length) + '\n\n';
-    output += `Date: ${writeup.date}\n`;
-    output += `Tags: ${writeup.tags.join(', ')}\n`;
-    output += `Difficulty: ${writeup.difficulty}\n`;
-    output += `Category: ${writeup.category}\n`;
-    if (writeup.platform) {
-      output += `Platform: ${writeup.platform}\n`;
-    }
-    if (writeup.event) {
-      output += `Event: ${writeup.event}\n`;
-    }
-    output += '\n' + '-'.repeat(60) + '\n\n';
-    
-    // Process markdown content to make it terminal-friendly
-    const processedContent = content
-      // Headers
-      .replace(/^# (.*$)/gm, '\n$1\n' + '='.repeat(50))
-      .replace(/^## (.*$)/gm, '\n$1\n' + '-'.repeat(30))
-      .replace(/^### (.*$)/gm, '\n$1:')
-      .replace(/^#### (.*$)/gm, '\n$1:')
-      
-      // Bold and italic
-      .replace(/\*\*(.*?)\*\*/g, '$1')
-      .replace(/\*(.*?)\*/g, '$1')
-      
-      // Code blocks
-      .replace(/```(\w+)?\n([\s\S]*?)```/g, '\n[CODE BLOCK]\n$2\n[/CODE BLOCK]\n')
-      
-      // Inline code
-      .replace(/`([^`]+)`/g, '$1')
-      
-      // Links
-      .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
-      
-      // Lists
-      .replace(/^- (.*$)/gm, '  • $1')
-      .replace(/^\* (.*$)/gm, '  • $1')
-      .replace(/^\d+\. (.*$)/gm, '  $1')
-      
-      // Remove images (security)
-      .replace(/!\[.*?\]\(.*?\)/g, '[IMAGE REMOVED FOR SECURITY]')
-      
-      // Clean up extra newlines
-      .replace(/\n{3,}/g, '\n\n');
-    
-    output += processedContent;
-    
-    return output;
-    
-  } catch (error) {
-    return `Error loading writeup: ${error}\n\nExample content for '${writeup.title}':\n\n${getExampleContent(writeup)}`;
-  }
-},
+  },
 
   // Command to show categories
   categories: () => {
