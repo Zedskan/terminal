@@ -10,9 +10,9 @@
     "email": "yassine@fathi.me"
   },
   "contributor": {
-  "name": "Zedskan",
-  "url": "https://zedskan.github.io/",
-  "email": "alterZdkn@proton.me"
+    "name": "Zedskan",
+    "url": "https://zedskan.github.io/",
+    "email": "alterZdkn@proton.me"
   },
   "repository": {
     "type": "git",
@@ -38,5 +38,10 @@
   },
   "engines": {
     "node": ">=18.17.0"
+  },
+  "dependencies": {
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "yarn": "^1.22.22"
   }
 }
