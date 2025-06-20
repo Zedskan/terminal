@@ -12,7 +12,8 @@
   "contributor": {
     "name": "Zedskan",
     "url": "https://zedskan.github.io/",
-    "email": "alterZdkn@proton.me"
+    "email": "alterZdkn@proton.me",
+    "git": "https://github.com/Zedskan"
   },
   "repository": {
     "type": "git",
@@ -42,6 +43,7 @@
   "dependencies": {
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
-    "yarn": "^1.22.22"
+    "yarn": "^1.22.22",
+    "marked": "^x.x.x"
   }
 }

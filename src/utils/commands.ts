@@ -2,14 +2,12 @@ import packageJson from '../../package.json';
 import themes from '../../themes.json';
 import { history } from '../stores/history';
 import { theme } from '../stores/theme';
-import { writeups, categories, getWriteupsByCategory, getWriteupById } from '../writeups';
+import { writeupEvents, categories, getWriteupEventsByCategory, getWriteupEventById } from '../writeups';
 
 const hostname = window.location.hostname;
 
-// Add this type definition at the top of your commands.ts file
 type CommandOutput = string | { type: 'markdown', content: string };
 type CommandFunction = (args: string[]) => Promise<CommandOutput> | CommandOutput;
-
 
 export const commands: Record<string, CommandFunction> = {
   help: () => 'Available commands: ' + Object.keys(commands).join(', '),
@@ -25,36 +23,35 @@ export const commands: Record<string, CommandFunction> = {
     return `Permission denied: unable to run the command '${args[0]}' as root.`;
   },
 
-  // Main writeups command
+  // Main writeups command - updated for events
   writeups: (args: string[]) => {
     if (args.length === 0) {
-      // Show all writeups organized by category
-      let output = 'AVAILABLE WRITEUPS\n\n';
+      // Show all writeup events organized by platform/date
+      let output = 'AVAILABLE CTF WRITEUPS\n\n';
       
-      categories.forEach(cat => {
-        const categoryWriteups = getWriteupsByCategory(cat.name);
-        if (categoryWriteups.length > 0) {
-          output += `${cat.name.toUpperCase()} - ${cat.description}\n`;
+      // Group by platform
+      const platforms = [...new Set(writeupEvents.map(event => event.platform))];
+      
+      platforms.forEach(platform => {
+        const platformEvents = writeupEvents.filter(event => event.platform === platform);
+        if (platformEvents.length > 0) {
+          output += `${platform.toUpperCase()} EVENTS\n`;
           output += '='.repeat(50) + '\n';
           
-          categoryWriteups.forEach(writeup => {
-            const difficultyMarker = writeup.difficulty === 'Easy' ? '[E]' : 
-                                   writeup.difficulty === 'Medium' ? '[M]' : '[H]';
-            output += `${difficultyMarker} [${writeup.id}] ${writeup.title}\n`;
-            output += `    Date: ${writeup.date} | Tags: ${writeup.tags.join(', ')}\n`;
-            if (writeup.platform) {
-              output += `    Platform: ${writeup.platform}`;
-              if (writeup.event) {
-                output += ` | Event: ${writeup.event}`;
-              }
-              output += '\n';
-            }
-            output += `    Description: ${writeup.description}\n\n`;
+          platformEvents.forEach(event => {
+            const difficultyMarker = event.difficulty === 'Easy' ? '[E]' : 
+                                   event.difficulty === 'Medium' ? '[M]' : 
+                                   event.difficulty === 'Hard' ? '[H]' : '[MIX]';
+            output += `${difficultyMarker} [${event.id}] ${event.title}\n`;
+            output += `    Date: ${event.date} | Event: ${event.event}\n`;
+            output += `    Categories: ${event.categories.join(', ')} | Challenges: ${event.challengeCount}\n`;
+            output += `    Tags: ${event.tags.join(', ')}\n`;
+            output += `    Description: ${event.description}\n\n`;
           });
         }
       });
       
-      output += '\nTip: Use "read <id>" to read a specific writeup';
+      output += '\nTip: Use "read <event-id>" to read a specific CTF writeup';
       output += '\nTip: Use "writeups <category>" to filter by category';
       
       return output;
@@ -67,52 +64,48 @@ export const commands: Record<string, CommandFunction> = {
         return `Error: Category '${category}' not found.\nAvailable categories: ${categories.map(c => c.name).join(', ')}`;
       }
       
-      const categoryWriteups = getWriteupsByCategory(category);
+      const categoryEvents = getWriteupEventsByCategory(category);
       
-      if (categoryWriteups.length === 0) {
-        return `No writeups available in category '${category}' yet.`;
+      if (categoryEvents.length === 0) {
+        return `No writeup events available in category '${category}' yet.`;
       }
       
       let output = `${category.toUpperCase()} - ${categoryInfo.description}\n`;
       output += '='.repeat(60) + '\n\n';
       
-      categoryWriteups.forEach(writeup => {
-        const difficultyMarker = writeup.difficulty === 'Easy' ? '[E]' : 
-                               writeup.difficulty === 'Medium' ? '[M]' : '[H]';
-        output += `${difficultyMarker} [${writeup.id}] ${writeup.title}\n`;
-        output += `    Date: ${writeup.date} | Tags: ${writeup.tags.join(', ')}\n`;
-        if (writeup.platform) {
-          output += `    Platform: ${writeup.platform}`;
-          if (writeup.event) {
-            output += ` | Event: ${writeup.event}`;
-          }
-          output += '\n';
-        }
-        output += `    Description: ${writeup.description}\n\n`;
+      categoryEvents.forEach(event => {
+        const difficultyMarker = event.difficulty === 'Easy' ? '[E]' : 
+                               event.difficulty === 'Medium' ? '[M]' : 
+                               event.difficulty === 'Hard' ? '[H]' : '[MIX]';
+        output += `${difficultyMarker} [${event.id}] ${event.title}\n`;
+        output += `    Date: ${event.date} | Platform: ${event.platform}\n`;
+        output += `    Event: ${event.event} | Challenges: ${event.challengeCount}\n`;
+        output += `    Tags: ${event.tags.join(', ')}\n`;
+        output += `    Description: ${event.description}\n\n`;
       });
       
-      output += `\nTip: Use "read <id>" to read any of these writeups`;
+      output += `\nTip: Use "read <event-id>" to read any of these CTF writeups`;
       
       return output;
     }
   },
-// Command to read a specific writeup - UPDATED VERSION
- // Updated read command
+
+  // Updated read command for events
   read: async (args: string[]): Promise<CommandOutput> => {
     if (args.length === 0) {
-      return 'Usage: read <writeup-id>\nExample: read sqli-basics';
+      return 'Usage: read <event-id>\nExample: read hacktheboo-2024';
     }
     
-    const writeupId = args[0];
-    const writeup = getWriteupById(writeupId);
+    const eventId = args[0];
+    const event = getWriteupEventById(eventId);
     
-    if (!writeup) {
-      return `Error: Writeup '${writeupId}' not found.\nUse 'writeups' to see all available writeups.`;
+    if (!event) {
+      return `Error: CTF writeup '${eventId}' not found.\nUse 'writeups' to see all available writeups.`;
     }
     
     try {
       // Try to load the markdown file content
-      const response = await fetch(writeup.filePath);
+      const response = await fetch(event.filePath);
       
       if (!response.ok) {
         throw new Error('Could not load file');
@@ -121,14 +114,15 @@ export const commands: Record<string, CommandFunction> = {
       const content = await response.text();
       
       // Create header information as markdown
-      const headerMarkdown = `# ${writeup.title}
+      const headerMarkdown = `# ${event.title}
 
-**Date:** ${writeup.date}  
-**Tags:** ${writeup.tags.join(', ')}  
-**Difficulty:** ${writeup.difficulty}  
-**Category:** ${writeup.category}  
-${writeup.platform ? `**Platform:** ${writeup.platform}  ` : ''}
-${writeup.event ? `**Event:** ${writeup.event}  ` : ''}
+**Date:** ${event.date}  
+**Platform:** ${event.platform}  
+**Event:** ${event.event}  
+**Categories:** ${event.categories.join(', ')}  
+**Challenges Solved:** ${event.challengeCount}  
+**Difficulty:** ${event.difficulty}  
+**Tags:** ${event.tags.join(', ')}  
 
 ---
 
@@ -137,7 +131,7 @@ ${writeup.event ? `**Event:** ${writeup.event}  ` : ''}
       // Combine header with the actual content
       const fullContent = headerMarkdown + content;
       
-      // Return as markdown object instead of plain text
+      // Return as markdown object
       return {
         type: 'markdown' as const,
         content: fullContent
@@ -145,7 +139,7 @@ ${writeup.event ? `**Event:** ${writeup.event}  ` : ''}
       
     } catch (error) {
       // For errors, still return plain text
-      return `Error loading writeup: ${error}\n\nExample content for '${writeup.title}':\n\n${getExampleContent(writeup)}`;
+      return `Error loading writeup: ${error}\n\nExample content for '${event.title}':\n\n${getExampleEventContent(event)}`;
     }
   },
 
@@ -154,39 +148,52 @@ ${writeup.event ? `**Event:** ${writeup.event}  ` : ''}
     let output = 'AVAILABLE CATEGORIES\n\n';
     
     categories.forEach(cat => {
-      const count = getWriteupsByCategory(cat.name).length;
-      output += `${cat.name.toUpperCase().padEnd(12)} - ${cat.description} (${count} writeups)\n`;
+      const count = getWriteupEventsByCategory(cat.name).length;
+      output += `${cat.name.toUpperCase().padEnd(12)} - ${cat.description} (${count} events)\n`;
     });
     
-    output += '\nTip: Use "writeups <category>" to view writeups from a specific category';
+    output += '\nTip: Use "writeups <category>" to view CTF events from a specific category';
     
     return output;
   },
 
-  // Personal information
+  // Rest of your commands remain the same...
   about: () => {
     return `
-    ABOUT ME
-    ========
+     ▄▄▄· ▄▄▄▄·       ▄• ▄▌▄▄▄▄▄    • ▌ ▄ ·. ▄▄▄ .▄▄ 
+    ▐█ ▀█ ▐█ ▀█▪▪     █▪██▌•██      ·██ ▐███▪▀▄.▀·██▌
+    ▄█▀▀█ ▐█▀▀█▄ ▄█▀▄ █▌▐█▌ ▐█.▪    ▐█ ▌▐▌▐█·▐▀▀▪▄▐█·
+    ▐█ ▪▐▌██▄▪▐█▐█▌.▐▌▐█▄█▌ ▐█▌·    ██ ██▌▐█▌▐█▄▄▌.▀ 
+     ▀  ▀ ·▀▀▀▀  ▀█▄▀▪ ▀▀▀  ▀▀▀     ▀▀  █▪▀▀▀ ▀▀▀  ▀                                                       
+    ================================================
 
-    Hello! I'm passionate about cybersecurity and ethical hacking.
+    I break things to understand them.
 
-    Specialties:
-    * Web Application Security
-    * Binary Exploitation  
-    * Cryptography
-    * Digital Forensics
+    My focus is cybersecurity, with an edge honed in offensive tactics.  
+    I don't chase titles. I chase depth, truth, and the raw mechanics behind every exploit.
 
-    Achievements:
-    * Active CTF Player
-    * Bug Bounty Hunter
-    * Pentester in Training
+    Core skillset:
+    - Web Application Security  
+    - Binary Exploitation  
+    - Cryptanalysis  
+    - Digital Forensics
 
-    Contact: ${packageJson.contributor?.email || 'your-email@example.com'}
-    GitHub: ${packageJson.repository?.url || 'https://github.com/your-username'}
+    Field experience:
+    - CTF competitor  
+    - Bug bounty hunter  
+    - Pentester in training  
+    - Obsessed with methodology, not shortcuts
 
-    This blog documents my journey in the cybersecurity world.
-    Each writeup includes detailed methodology and lessons learned.
+    This site is not just a blog. It's my archive.  
+    Every post is a trace, a footprint, a thought turned into action.  
+    I document the process, the logic, and the mindset behind the breach.
+
+    If you're here to see impact, scroll.  
+    If you're here to collaborate, email me.
+    If you're here for y'know, do it.
+
+    Contact: ${packageJson.contributor?.email}  
+    GitHub: ${packageJson.contributor?.git}
     `;
   },
 
@@ -282,71 +289,56 @@ ${writeup.event ? `**Event:** ${writeup.event}  ` : ''}
           L#E   E#, t      .DD.E#, E###t      t#E      ;K#f                       Et
          G#W.   E#t EK:   ,WK. E#t E#fE#f     t#E    .G#D.                        E#t                             
         D#K.    E#t E#t  i#D   E#t E#t D#G    t#E   j#K;                          E##t                 f#i j.
-       E#K.     E#t E#t j#f    E#t E#t  f#E.  t#E ,K#f   ,GD;               ..    E#W#t GEEEEEEEL    .E#t  EW,
-     .E#E.      E#t E#tL#i     E#t E#t   t#K: t#E  j#Wi   E#t              ;W,    E#tfL.,;;L#K;;.   i#W,   E##j 
-    .K#E        E#t E#WW,      E#t E#t    ;#W,t#E   .G#D: E#t             j##,    E#t      t#E     L#D.    E###D. 
-   .K#D         E#t E#K:       E#t E#t     :K#D#E     ,K#fK#t            G###, ,ffW#Dffj.  t#E   :K#Wfff;  E#jG#W;
-  .W#G          E#t ED.        E#t E#t      .E##E       j###t          :E####,  ;LW#ELLLf. t#E   i##WLLLLt E#t t##f  
- :W##########Wt E#t t          E#t ..         G#E        .G#t         ;W#DG##,    E#t      t#E    .E#L     E#t  :K#E: 
+       E#K.     E#t E#t j#f    E#t E#t  f#E.  t#E ,K#f   ,GD;               ..    E#    GEEEEEEEL    .E#t  EW,
+     .E#E.      E#t E#tL#i     E#t E#t   t#K: t#E  j#Wi   E#t              ;W,    E#t      L#K      i#W,   E##j 
+   .K#D         E#t E#K:       E#t E#t     :K#D#E     ,K#fK#t            G###, ,ffW#Dffj.  t#E   :K#Wf     E#jG#W;  
+  .W#G          E#t ED.        E#t E#t      .E##E       j###t          :E####,  ;LW#ELLLf. t#E   i##WLLLLt E#t t##f   
+ :W##########Wt E#t t          E#t ..         G#E        .G#t         ;W#DG##,    E#t      t#E    .E#L     E#t  :K#E:   
  :,,,,,,,,,,,,,.,;.            ,;.             fE          ;;        j###DW##,    E#t      t#E      f#E:   E#KDDDD###i
-                                                ,                   G##i,,G##,    E#t      t#E       ,WW;  E#f,t#Wi,,,
-                                                                  :K#K:   L##,    E#t      t#E        .D#; E#t  ;#W:   
-                                                                 ;##D.    L##,    E#t       fE          tt DWi   ,KK:                                    
-                          ;                                      ,,,      .,,     ;#t        :                                                                
-                          ED.                                                      :;                                      
-                          E#Wi        L.                            
+                                                                    G##i,,G##,    E#t      t#E       ,WW;  E#f,t#Wi,,, 
+                                                                  :K#K:   L##,    E#t      t#E        .D#; E#t  ;#W:    
+                          ED.                                    ;##D.    L##,    E#t       fE          tt DWi   ,KK:  
+                          E#Wi        L.                                  ,,,     .,,      ;#t                                             
                       t   E###G.      EW:        ,ft t           .Gt .    .  
            ..       : Ej  E#fD#W;     E##;       t#E Ej         j#W: Di   Dt    GEEEEEEEL
           ,W,     .Et E#, E#t t##L    E###t      t#E E#,      ;K#f   E#i  E#i   ,;;L#K;;.
          t##,    ,W#t E#t E#t  .E#K,  E#fE#f     t#E E#t    .G#D.    E#t  E#t      t#E 
         L###,   j###t E#t E#t    j##f E#t D#G    t#E E#t   j#K;      E#t  E#t      t#E 
-      .E#j##,  G#fE#t E#t E#t    :E#K:E#t  f#E.  t#E E#t ,K#f   ,GD; E########f.   t#E 
-     ;WW; ##,:K#i E#t E#t E#t   t##L  E#t   t#K: t#E E#t  j#Wi   E#t E#j..K#j...   t#E 
+      .E#j##,  G#fE#t E#t E#t    :E#K E#t  f#E.  t#E E#t ,K#f   ,GD; E########f.   t#E 
     j#E.  ##f#W,  E#t E#t E#t .D#W;   E#t    ;#W,t#E E#t   .G#D: E#t E#t  E#t      t#E
-  .D#L    ###K:   E#t E#t E#tiW#G.    E#t     :K#D#E E#t     ,K#fK#t E#t  E#t      t#E
- :K#t     ##D.    E#t E#t E#K##i      E#t      .E##E E#t       j###t f#t  f#t      t#E 
- ...      #G      ..  E#t E##D.       ..         G#E E#t        .G#t  ii   ii       fE  
-          j           ,;. E#t                     fE ,;.          ;;                 :
-                          L:                       ,                                 
+  .D#L    ###K:   E#t E#t E##D.       E#t     :K#D#E E#t     ,K#fK#t E#t  E#t      t#E
+ :K#t     ##D.    E#t E#t E#t         E#t      .E##E E#t       j###t f#t  f#t      t#E 
+ ...      #G      ..  E#t L:          ..         G#E E#t        .G#t  ii   ii       fE  
+          j           ,;.  
 
 Welcome to my Cybersecurity Blog!
-
-Available commands:
-* writeups      - List all available writeups
-* writeups web  - List writeups from specific category  
-* read <id>     - Read a specific writeup
-* categories    - List all categories
-* about         - Information about me
-
 Type 'help' for all available commands.
 `,
 };
 
 // Helper function for example content
-function getExampleContent(writeup: any): string {
+function getExampleEventContent(event: any): string {
   return `
-# ${writeup.title}
+# ${event.title}
 
-## Challenge Information
-- Platform: ${writeup.platform || 'N/A'}
-- Event: ${writeup.event || 'N/A'}
-- Difficulty: ${writeup.difficulty}
-- Category: ${writeup.category}
-- Points: TBD
+## Event Information
+- Platform: ${event.platform}
+- Event: ${event.event}
+- Date: ${event.date}
+- Categories: ${event.categories.join(', ')}
+- Challenges Solved: ${event.challengeCount}
+- Overall Difficulty: ${event.difficulty}
 
-## Description
-${writeup.description}
+## Overview
+${event.description}
 
-## Methodology
-[Your step-by-step methodology would go here]
+## Challenge Writeups
+[Your detailed writeups for each challenge would go here]
 
-## Solution
-[Your detailed solution would go here]
-
-## Lessons Learned
-[Your lessons learned would go here]
+## Summary
+[Your overall thoughts and lessons learned would go here]
 
 ---
-This is example content. The actual markdown file will be loaded from: ${writeup.filePath}
+This is example content. The actual markdown file will be loaded from: ${event.filePath}
   `;
 }
