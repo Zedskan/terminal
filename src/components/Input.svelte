@@ -7,6 +7,9 @@
 
   let command = '';
   let historyIndex = -1;
+  let lastExecutedCommand = '';
+  let lastCommandRef: HTMLDivElement | null = null;
+
 
   let clickStartTime: number;
 
@@ -27,13 +30,19 @@
   });
 
   afterUpdate(() => {
-    input.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    if (lastExecutedCommand === 'read' && lastCommandRef) {
+      lastCommandRef.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      lastCommandRef = null;
+    } else {
+      input.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
   });
-
 
   const handleKeyDown = async (event: KeyboardEvent) => {
     if (event.key === 'Enter') {
-      const [commandName, ...args] = command.split(' ');
+        const [commandName, ...args] = command.split(' ');
+        lastExecutedCommand = commandName;
+
 
       if (import.meta.env.VITE_TRACKING_ENABLED === 'true') {
         track(commandName, ...args);
@@ -83,22 +92,23 @@
       if (autoCompleteCommand) {
         command = autoCompleteCommand;
       }
-    } else if (event.ctrlKey && event.key === 'l') {
-      event.preventDefault();
-
-      $history = [];
-    }
+    } 
   };
+  function handleGlobalKeys(event: KeyboardEvent) {
+    if (event.ctrlKey && event.key === 'l') {
+      event.preventDefault();
+      history.set([]); // limpia el store
+      input.focus();
+    } else if (event.ctrlKey && event.key === 'c') {
+      event.preventDefault();
+      input?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      
+    }
+  }
 </script>
 
 
-<svelte:window
-  on:mousedown={() => clickStartTime = Date.now()}
-  on:mouseup={() => {
-    const clickDuration = Date.now() - clickStartTime;
-    if (clickDuration < 200) input.focus();
-  }}
-/>
+<svelte:window on:keydown={handleGlobalKeys} />
 
 
 

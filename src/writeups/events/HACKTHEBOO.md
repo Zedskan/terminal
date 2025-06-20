@@ -2,12 +2,12 @@
 
 ## WayWitch
 
-Nos da simplemetn una pagina que envia tickets, pense que seria xss o algo pero nel:
-![Página de tickets](https://github.com/user-attachments/assets/83728517-1390-4ca1-97ba-788d5cd11128)
+Nos da simplemente una pagina que envia tickets, pense que seria xss o algo pero nel:
+![Página de tickets](/public/images/events/Images/Pasted%20image%2020241024122624.png)
 
-revise los scripts de la pagina y al parecer hay unscript que crea el jwt y lo ahce son la secret key en el mismo script.
+revise los scripts de la pagina y al parecer hay un script que crea el jwt y lo hace son la secret key en el mismo script.
 descifrando la cookie dice user:ghesst_11133
-que no nos interesa lo cambiamos a admincon la aydua de la consoal de comandos:
+que no nos interesa lo cambiamos a admin con la aydua de la consoal de comandos:
 
 ``` script
 async function generateAdminJWT() {
@@ -67,25 +67,20 @@ generateAdminJWT();
 ```
 
 
-ahora nos crea la cookie yy ya etsa con admin:
-![Cookie de admin](/src/writeups/events/Images/Pasted image 20241024122859.png)
+ahora nos crea la cookie y ya etsa con admin:
+![Cookie de admin](/public/images/events/Images/Pasted%20image%2020241024122859.png)
 
-Bien ahora viendo el codigo que nos proporcionaron del controlador de rutas, hay una linea intersante hay una ruta llamda tickets, que solo se accede si tu cookie es admin, y como la cambiamos realizamos la request:
-![Request de tickets](/src/writeups/events/Images/Pasted image 20241024123032.png)
+Bien ahora viendo el codigo que nos proporcionaron del controlador de rutas, hay una linea interesante hay una ruta llamda tickets, que solo se accede si tu cookie es admin, y como la cambiamos realizamos la request:
+![Request de tickets](/public/images/events/Images/Pasted%20image%2020241024123032.png)
 
 Y nos da la request completa de todos los tickets:
 
-![Respuesta completa](/src/writeups/events/Images/Pasted image 20241024123053.png)
+![Respuesta completa](/public/images/events/Images/Pasted%20image%2020241024123053.png)
 y en el de admin en la descripcion esta la flag.
 
 HTB{k33p_jwt_s3cr3t_s4f3_br0_c8374ad1057858d2b4a47b53d5180932}
  tambien lo probe con burpxd:
-![Prueba con Burp](/src/writeups/events/Images/Pasted image 20241024123303.png)
-
-## Cursed State Policy
-
-CSPxd nos deja bien claro desde el principio que es Content Security Policy
-
+![Prueba con Burp](/public/images/events/Images/Pasted%20image%2020241024123303.png)
 
 
 # Forensics
@@ -96,7 +91,7 @@ Nos dan un monton de logs de windows evtx
 
 Hay un monton pero casi todos siguen un patron todos tienen el mismo tamaño a exepcion de unarchivo que es el mas pesado, probablemente ahi este la flag.
 
-![Logs de Windows](/src/writeups/events/Images/Pasted image 20241024183730.png)
+![Logs de Windows](/public/images/events/Images/Pasted%20image%2020241024183730.png)
 
 
 Estos logs solo se pueden abrir con el gestor de eventro scon windwos o eso pense
@@ -104,35 +99,35 @@ busque una herramienta
 
 llamada evtx_dump que te dumpea todo en json
 
-![Herramienta evtx_dump](/src/writeups/events/Images/Pasted image 20241024183626.png)
+![Herramienta evtx_dump](/public/images/events/Images/Pasted%20image%2020241024183626.png)
 
 Despues procedi a dumpear con la herramienta y parsearlo a json en un txt
 
-![Dump a JSON](/src/writeups/events/Images/Pasted image 20241024183824.png)
+![Dump a JSON](/public/images/events/Images/Pasted%20image%2020241024183824.png)
 analizando el txt me doy cuenta de que casi al prinicpio en el  Record 5 hay un encoded:
 
 Encontre el primer pedazo de la flag en un EventData:
  es un base64
  
-![Primer pedazo base64](/src/writeups/events/Images/Pasted image 20241024183319.png)
+![Primer pedazo base64](/public/images/events/Images/Pasted%20image%2020241024183319.png)
 
-![Decodificación](/src/writeups/events/Images/Pasted image 20241024183405.png)
+![Decodificación](/public/images/events/Images/Pasted%20image%2020241024183405.png)
 
 
 Buscando tiempo despues encontre otro base64 en el eventData del record 46:
 
-![Segundo base64](/src/writeups/events/Images/Pasted image 20241024183208.png)
+![Segundo base64](/public/images/events/Images/Pasted%20image%2020241024183208.png)
 
 y finalmente encontre el otro pedazo:
 
-![Tercer pedazo](/src/writeups/events/Images/Pasted image 20241024183239.png)
+![Tercer pedazo](/public/images/events/Images/Pasted%20image%2020241024183239.png)
 
 la flag seria:
 
 HTB{Gh0st_L0c4t10n_W4s_R3v34l3d}
 
 JAJAJA HAY UN RICKROLL EN UNA PARTE DONDE SE REALIZA LA DESCARGA DE UN ARCHIVO
-![Rickroll](/src/writeups/events/Images/Pasted image 20241024184703.png)
+![Rickroll](/public/images/events/Images/Pasted%20image%2020241024184703.png)
  JAJAJA ES ESTE LINK XDDDDDDDDDD
 
 http://windowsliveupdater.com/3MZvgfcEiT.ps1/
@@ -145,9 +140,9 @@ Vale analizamos el  primer stream
 no hay nada solo not found
 el segundo tampoco
 en el tercero se pone buena la cosa, ya que se envia el siguente dato en base64
-![Datos en base64](/src/writeups/events/Images/Pasted image 20241024192133.png)
+![Datos en base64](/public/images/events/Images/Pasted%20image%2020241024192133.png)
 Si lo decodeamos nos dice lo siguente:
-![Decodificación del comando](/src/writeups/events/Images/Pasted image 20241024192208.png)
+![Decodificación del comando](/public/images/events/Images/Pasted%20image%2020241024192208.png)
 Analizando el codigo:
 1. **`Get-ChildItem -Path C:\xampp`**:
     
@@ -211,7 +206,7 @@ La primera nos da como entro al sistema
 La segunda como lsito los directorios:
 Y en la tercera como define sus configuraciones para sus bases de datos y pone como contraseña de su base de datos:
 
-![Flag encontrada](/src/writeups/events/Images/Pasted image 20241024192037.png)
+![Flag encontrada](/public/images/events/Images/Pasted%20image%2020241024192037.png)
 
 HTB{f06_d154pp34r3d_4nd_fl46_w4s_f0und!}
 
@@ -225,7 +220,7 @@ VALE HICE TRAMPAAAAA
 LE HICE UN HEXDUMPPPPPPPPPPPP
 QUEMENMEEEE
 PERO NECESITO HACERLO RAPIDOOOOOOOOOOOOOO
-![Hexdump](/src/writeups/events/Images/Pasted image 20241024203350.png)
+![Hexdump](/public/images/events/Images/Pasted%20image%2020241024203350.png)
 
 ORDENANDO SALE:
 
@@ -241,4 +236,4 @@ jeje
 
 
 
-![Terrorfryer](/src/writeups/events/Images/Pasted image 20241025113922.png)
+![Terrorfryer](/public/images/events/Images/Pasted%20image%2020241025113922.png)

@@ -5,6 +5,8 @@
   import { marked } from 'marked';
   import { onMount } from 'svelte';
   
+  let lastCommandRef: HTMLDivElement | null = null;
+
 
    // Configura opciones (con anotaciones para TypeScript)
   onMount(() => {
@@ -24,31 +26,54 @@
   }
 </script>
 
-{#each $history as { command, outputs }}
-  <div style={`color: ${$theme.foreground}`}>
-    <div class="flex flex-col md:flex-row">
-      <Ps1 />
-
-      <div class="flex">
-        <p class="visible md:hidden">❯</p>
-
-        <p class="px-2">{command}</p>
-      </div>
-    </div>
-
-    {#each outputs as output}
-      {#if isMarkdownOutput(output)}
-        <div class="markdown-content px-2 py-2">
-          {@html renderMarkdown(output.content)}
+{#each $history as { command, outputs }, index}
+  {#if index === $history.length - 1 && command === 'read'}
+    <div
+      style={`color: ${$theme.foreground}`}
+      bind:this={lastCommandRef}
+    >
+      <div class="flex flex-col md:flex-row">
+        <Ps1 />
+        <div class="flex">
+          <p class="visible md:hidden">❯</p>
+          <p class="px-2">{command}</p>
         </div>
-      {:else}
-        <p class="whitespace-pre px-2">
-          {output}
-        </p>
-      {/if}
-    {/each}
-  </div>
+      </div>
+
+      {#each outputs as output}
+        {#if isMarkdownOutput(output)}
+          <div class="markdown-content px-2 py-2">
+            {@html renderMarkdown(output.content)}
+          </div>
+        {:else}
+          <p class="whitespace-pre px-2">{output}</p>
+        {/if}
+      {/each}
+    </div>
+  {:else}
+    <div style={`color: ${$theme.foreground}`}>
+      <div class="flex flex-col md:flex-row">
+        <Ps1 />
+        <div class="flex">
+          <p class="visible md:hidden">❯</p>
+          <p class="px-2">{command}</p>
+        </div>
+      </div>
+
+      {#each outputs as output}
+        {#if isMarkdownOutput(output)}
+          <div class="markdown-content px-2 py-2">
+            {@html renderMarkdown(output.content)}
+          </div>
+        {:else}
+          <p class="whitespace-pre px-2">{output}</p>
+        {/if}
+      {/each}
+    </div>
+  {/if}
 {/each}
+
+
 
 <style>
   :global(.markdown-content) {
