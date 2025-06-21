@@ -99,11 +99,7 @@
       event.preventDefault();
       history.set([]); // limpia el store
       input.focus();
-    } else if (event.ctrlKey && event.key === 'c') {
-      event.preventDefault();
-      input?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      
-    }
+    } 
   }
 </script>
 

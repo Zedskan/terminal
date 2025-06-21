@@ -21,7 +21,7 @@ export const writeupEvents: WriteupEvent[] = [
     date: '2024-10-24',
     platform: 'HTB',
     event: 'HackTheBoo 2024',
-    filePath: '/src/writeups/events/HACKTHEBOO.md',
+    filePath: '/writeups/events/HACKTHEBOO.md',
     categories: ['web', 'forensics', 'reversing'],
     challengeCount: 6,
     difficulty: 'Mixed',

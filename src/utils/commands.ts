@@ -339,6 +339,5 @@ ${event.description}
 [Your overall thoughts and lessons learned would go here]
 
 ---
-This is example content. The actual markdown file will be loaded from: ${event.filePath}
   `;
 }
